@@ -40,6 +40,10 @@ export default defineConfig(({ mode, command }) => {
       : 3001;
   const showDevtools = env.VITE_SHOW_DEVTOOLS !== "false";
   const allowedHosts = [
+    // Deployed hostnames. Vite's preview server answers every request whose
+    // Host header is not on this list with a 403 "Blocked request", so a
+    // production hostname has to be named here regardless of the env.
+    "seo.marylandinsights.com",
     env.ALLOWED_HOST,
     env.BETTER_AUTH_URL ? new URL(env.BETTER_AUTH_URL).hostname : undefined,
   ].filter((host): host is string => Boolean(host));

@@ -1,32 +1,22 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import type { UseQueryResult } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Sparkles, type LucideIcon } from "lucide-react";
-import { SUBSCRIBE_ROUTE } from "@/shared/billing";
-import type { PlanStatus } from "@/client/features/billing/plan-detection";
-import { GateCard } from "@/client/components/GateCard";
 import { PageHeader } from "@/client/components/PageHeader";
 import { QueryError } from "@/client/components/QueryState";
 import {
-  SkeletonCard,
   SkeletonStatGrid,
   SkeletonTableRows,
 } from "@/client/components/SkeletonPresets";
-import { Badge } from "@/client/components/ui/badge";
-import { Button } from "@/client/components/ui/button";
 import { Card, CardContent } from "@/client/components/ui/card";
 import { getStandardErrorMessage } from "@/client/lib/error-messages";
 
 /**
- * The frame of Brand Lookup and Prompt Explorer: header, paid-plan gate,
- * search form, error, then the loading skeleton, the results or the recent
- * searches. The URL holds the active search; the page holds the form state.
+ * The frame of Brand Lookup and Prompt Explorer: header, search form, error,
+ * then the loading skeleton, the results or the recent searches. The URL holds
+ * the active search; the page holds the form state.
  */
 export function ResearchPageShell<TData>({
   title,
   description,
-  planStatus,
-  gate,
   form,
   query,
   hasActiveQuery,
@@ -41,12 +31,6 @@ export function ResearchPageShell<TData>({
 }: {
   title: string;
   description: string;
-  planStatus: "loading" | PlanStatus;
-  gate: {
-    feature: string;
-    description: string;
-    bullets: { icon: LucideIcon; title: string; body: string }[];
-  };
   form: ReactNode;
   query: UseQueryResult<TData>;
   hasActiveQuery: boolean;
@@ -96,65 +80,35 @@ export function ResearchPageShell<TData>({
           backLink={resultData && !isLoading ? backLink : undefined}
         />
 
-        {planStatus === "loading" ? (
-          <SkeletonCard />
-        ) : planStatus === "free" ? (
-          <GateCard
-            className="mx-auto max-w-3xl"
-            badge={
-              <Badge variant="soft">
-                <Sparkles data-icon="inline-start" />
-                Paid plan
-              </Badge>
+        {form}
+
+        {errorMessage ? (
+          <QueryError
+            cause={query.error}
+            fallback={
+              resultData
+                ? `${errorMessage} Showing earlier results.`
+                : errorMessage
             }
-            title={`Unlock ${gate.feature}`}
-            description={<p className="max-w-xl">{gate.description}</p>}
-            actions={
-              <Button
-                size="lg"
-                nativeButton={false}
-                render={
-                  <Link to={SUBSCRIBE_ROUTE} search={{ upgrade: true }} />
-                }
-              >
-                Upgrade
-              </Button>
-            }
-            features={gate.bullets}
+            onRetry={() => void query.refetch()}
+            isRetrying={query.isFetching}
           />
-        ) : (
-          <>
-            {form}
+        ) : null}
 
-            {errorMessage ? (
-              <QueryError
-                cause={query.error}
-                fallback={
-                  resultData
-                    ? `${errorMessage} Showing earlier results.`
-                    : errorMessage
-                }
-                onRetry={() => void query.refetch()}
-                isRetrying={query.isFetching}
-              />
-            ) : null}
-
-            {isLoading ? (
-              <div className="space-y-4">
-                <SkeletonStatGrid count={3} className="lg:grid-cols-3" />
-                <Card>
-                  <CardContent>
-                    <SkeletonTableRows rows={6} columns={3} />
-                  </CardContent>
-                </Card>
-              </div>
-            ) : resultData ? (
-              renderResults(resultData)
-            ) : !errorMessage ? (
-              history
-            ) : null}
-          </>
-        )}
+        {isLoading ? (
+          <div className="space-y-4">
+            <SkeletonStatGrid count={3} className="lg:grid-cols-3" />
+            <Card>
+              <CardContent>
+                <SkeletonTableRows rows={6} columns={3} />
+              </CardContent>
+            </Card>
+          </div>
+        ) : resultData ? (
+          renderResults(resultData)
+        ) : !errorMessage ? (
+          history
+        ) : null}
       </div>
     </div>
   );
