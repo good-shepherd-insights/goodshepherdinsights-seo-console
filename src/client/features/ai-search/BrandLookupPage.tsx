@@ -1,8 +1,9 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Sparkles } from "lucide-react";
+import { BarChart3, Quote, Sparkles, TrendingUp } from "lucide-react";
 import { lookupBrand } from "@/serverFunctions/ai-search";
+import { useHostedPlanGate } from "@/client/features/billing/HostedPlanGate";
 import { ResearchPageShell } from "@/client/features/ai-search/ResearchPageShell";
 import { BrandLookupResults } from "@/client/features/ai-search/components/BrandLookupResults";
 import { BrandLookupSearchCard } from "@/client/features/ai-search/components/BrandLookupSearchCard";
@@ -36,6 +37,24 @@ type Props = {
 
 const KEYWORD_SCOPE_REASON = "Scopes apply to domain lookups";
 
+const BRAND_LOOKUP_BULLETS = [
+  {
+    icon: TrendingUp,
+    title: "Track AI visibility",
+    body: "See estimated counts for ChatGPT and Google AI Overview answers that cite your brand, and watch the trend month over month.",
+  },
+  {
+    icon: Quote,
+    title: "See the prompts",
+    body: "View sample user questions where LLMs reference your brand or domain.",
+  },
+  {
+    icon: BarChart3,
+    title: "Map the competition",
+    body: "Spot the pages LLMs cite alongside you so you know who's competing for attention in AI answers.",
+  },
+];
+
 export function BrandLookupPage({
   projectId,
   initialQuery,
@@ -43,6 +62,7 @@ export function BrandLookupPage({
   initialScope,
   onSearchChange,
 }: Props) {
+  const planStatus = useHostedPlanGate();
   const [query, setQuery] = useState(initialQuery);
   // The user's explicit scope pick, or undefined to follow the input's default.
   const [scopeChoice, setScopeChoice] = useState<ResearchScope | undefined>(
@@ -99,7 +119,10 @@ export function BrandLookupPage({
           languageCode: "en",
         },
       }),
-    enabled: hasActiveQuery,
+    // Client-side gate is a UX optimization only; the paywall is enforced
+    // server-side (lookupBrand → assertPaidPlan) before any DataForSEO spend,
+    // so a stale free-plan window here just yields a rejected request, not cost.
+    enabled: hasActiveQuery && planStatus === "paid",
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
@@ -183,7 +206,13 @@ export function BrandLookupPage({
     <ResearchPageShell
       title="Brand Lookup"
       description="See how AI search cites any brand name or domain."
-
+      planStatus={planStatus}
+      gate={{
+        feature: "Brand Lookup",
+        description:
+          "See how ChatGPT and Google AI Overview cite any brand or domain — total mentions, sample prompts where it appears, and the pages cited alongside it.",
+        bullets: BRAND_LOOKUP_BULLETS,
+      }}
       form={
         <BrandLookupSearchCard
           query={query}

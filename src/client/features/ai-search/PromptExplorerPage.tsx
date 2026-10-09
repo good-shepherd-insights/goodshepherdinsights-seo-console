@@ -2,8 +2,9 @@ import { useState, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { identity, sortBy } from "remeda";
-import { MessageSquare } from "lucide-react";
+import { Columns3, MessageSquare, SearchCheck, Sparkles } from "lucide-react";
 import { explorePrompt } from "@/serverFunctions/ai-search";
+import { useHostedPlanGate } from "@/client/features/billing/HostedPlanGate";
 import { ResearchPageShell } from "@/client/features/ai-search/ResearchPageShell";
 import { PromptExplorerForm } from "@/client/features/ai-search/components/PromptExplorerForm";
 import { PromptExplorerResults } from "@/client/features/ai-search/components/PromptExplorerResults";
@@ -32,7 +33,26 @@ type Props = {
   onSubmit: (values: PromptExplorerFormValues) => void;
 };
 
+const PROMPT_EXPLORER_BULLETS = [
+  {
+    icon: Columns3,
+    title: "Four models side-by-side",
+    body: "Run one prompt across ChatGPT, Claude, Gemini, and Perplexity and compare answers in a single view.",
+  },
+  {
+    icon: SearchCheck,
+    title: "See what the models cite",
+    body: "Every answer lists the sources it drew from, so you can audit where each model gets its information.",
+  },
+  {
+    icon: Sparkles,
+    title: "Check brand mentions",
+    body: "Highlight a brand to instantly see whether it shows up in the answer text or the cited sources.",
+  },
+];
+
 export function PromptExplorerPage({ projectId, urlState, onSubmit }: Props) {
+  const planStatus = useHostedPlanGate();
   const [form, setForm] = useState<PromptExplorerFormValues>(urlState);
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -70,7 +90,10 @@ export function PromptExplorerPage({ projectId, urlState, onSubmit }: Props) {
               : urlState.webSearchCountryCode,
         },
       }),
-    enabled: hasActivePrompt,
+    // Client-side gate is a UX optimization only; the paywall is enforced
+    // server-side (explorePrompt → assertPaidPlan) before any DataForSEO spend,
+    // so a stale free-plan window here just yields a rejected request, not cost.
+    enabled: hasActivePrompt && planStatus === "paid",
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
@@ -129,6 +152,13 @@ export function PromptExplorerPage({ projectId, urlState, onSubmit }: Props) {
     <ResearchPageShell
       title="Prompt Explorer"
       description="Ask any prompt across ChatGPT, Claude, Gemini, and Perplexity side-by-side."
+      planStatus={planStatus}
+      gate={{
+        feature: "Prompt Explorer",
+        description:
+          "Ask one prompt across ChatGPT, Claude, Gemini, and Perplexity at the same time and compare their answers — including which sources each model cites.",
+        bullets: PROMPT_EXPLORER_BULLETS,
+      }}
       form={
         <PromptExplorerForm
           form={form}
