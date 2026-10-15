@@ -30,6 +30,7 @@ import {
   SETTLE_RENDERING_STEP,
 } from "@/server/workflows/auditStepConfigs";
 import type { RenderUsage } from "@/shared/audit-rendering";
+import { unauthenticated, notFound, rateLimited, forbidden, projectDefault, serviceUnavailable, crawlTargetBlocked, authConfigMissing } from "@/shared/errors";
 
 interface AuditParams {
   auditId: string;
@@ -84,7 +85,7 @@ export class SiteAuditWorkflow extends WorkflowEntrypoint<Env, AuditParams> {
         }
 
         if (audit.projectId !== projectId) {
-          throw new Error("Audit workflow project mismatch");
+          throw new Error("Audit workflow context mismatch");
         }
       });
 

@@ -1,37 +1,32 @@
 import { waitUntil } from "cloudflare:workers";
-import {
-  type CreditFeature,
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
+import {   type CreditFeature,
   mapDataforseoPathToCreditFeature,
 } from "@/shared/billing-credit-features";
 import { creditsForProviderUsd } from "@/shared/billing";
-import {
-  getOrCreateOrganizationCustomer,
+import {   getOrCreateOrganizationCustomer,
   reserveUsageCredits,
   settleUsageCredits,
 } from "@/server/billing/subscription";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
-import {
-  DataforseoChargedTaskError,
+import {   DataforseoChargedTaskError,
   type DataforseoApiCallCost,
   type DataforseoApiResponse,
 } from "@/server/lib/dataforseo/envelope";
 import { dataforseoPricing } from "@/server/lib/dataforseo/pricing";
-import {
-  fetchBusinessListingsSearch,
+import {   fetchBusinessListingsSearch,
   fetchMyBusinessInfo,
   fetchQuestionsAnswers,
   postGoogleReviewsTask,
   postMyBusinessUpdatesTask,
 } from "@/server/lib/dataforseo/business";
-import {
-  fetchBacklinksHistory,
+import {   fetchBacklinksHistory,
   fetchBacklinksRows,
   fetchBacklinksSummary,
   fetchDomainPagesSummary,
   fetchReferringDomains,
 } from "@/server/lib/dataforseo/backlinks";
-import {
-  fetchDomainRankOverview,
+import {   fetchDomainRankOverview,
   fetchKeywordIdeas,
   fetchKeywordOverview,
   fetchKeywordSuggestions,
@@ -40,20 +35,17 @@ import {
   fetchRelevantPages,
   fetchSerpCompetitors,
 } from "@/server/lib/dataforseo/labs";
-import {
-  fetchAdsKeywordIdeas,
+import {   fetchAdsKeywordIdeas,
   fetchAdsSearchVolume,
 } from "@/server/lib/dataforseo/google-ads";
-import {
-  fetchLiveSerp,
+import {   fetchLiveSerp,
   fetchLocalSerp,
   fetchRankCheckSerp,
   postLocalSerpTasks,
   postRankCheckTasks,
 } from "@/server/lib/dataforseo/serp";
 import { fetchLighthouseResult } from "@/server/lib/dataforseo/lighthouse";
-import {
-  fetchLlmAggregatedMetrics,
+import {   fetchLlmAggregatedMetrics,
   fetchLlmCrossAggregatedMetrics,
   fetchLlmMentionsSearch,
   fetchLlmResponse,
@@ -360,7 +352,6 @@ async function meterDataforseoCalls<T>(
     const settled = await Promise.allSettled(
       executes.map(async (execute, index) => {
         if (refusedCalls.includes(index)) {
-          throw new AppError("INSUFFICIENT_CREDITS");
         }
         try {
           const result = await execute();
@@ -375,7 +366,7 @@ async function meterDataforseoCalls<T>(
           // DataForSEO still billed us (costUsd > 0), charge that cost so the
           // spend stays metered and visible instead of silently eaten.
           if (error.isInvalidField && error.billing.costUsd <= 0) {
-            throw new AppError("VALIDATION_ERROR", error.message);
+            throw new AppError(serviceTaskMissing.code, serviceTaskMissing.message);
           }
           billed[index] = error.billing;
           throw error;

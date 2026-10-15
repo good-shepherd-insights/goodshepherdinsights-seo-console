@@ -1,3 +1,4 @@
+import { forbidden } from "@/shared/errors";
 import {
   hasOrgPermission,
   type OrgPermissionRequest,
@@ -12,9 +13,6 @@ export function requireOrgPermission(
   permissions: OrgPermissionRequest,
 ) {
   if (!hasOrgPermission(context.role, permissions)) {
-    throw new AppError(
-      "FORBIDDEN",
-      "Your organization role does not allow this action.",
-    );
+    throw new AppError(forbidden.code, forbidden.message)
   }
 }

@@ -1,4 +1,5 @@
 import { AppError } from "@/server/lib/errors";
+import { crawlTargetBlocked, urlInvalid } from "@/shared/errors";
 import { crawlerHeadersFor, type CrawlerAccess } from "@/shared/crawler-access";
 
 const BLOCKED_HOSTS = new Set([
@@ -211,7 +212,7 @@ export async function normalizeAndValidateStartUrl(
   input: string,
 ): Promise<string> {
   let raw = input.trim();
-  if (!raw) throw new AppError("VALIDATION_ERROR");
+  if (!raw) throw new AppError(urlInvalid.code, urlInvalid.message);
 
   if (!raw.startsWith("http://") && !raw.startsWith("https://")) {
     raw = `https://${raw}`;
@@ -221,19 +222,19 @@ export async function normalizeAndValidateStartUrl(
   try {
     parsed = new URL(raw);
   } catch {
-    throw new AppError("VALIDATION_ERROR");
+    throw new AppError(urlInvalid.code, urlInvalid.message);
   }
 
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    throw new AppError("VALIDATION_ERROR");
+    throw new AppError(urlInvalid.code, urlInvalid.message);
   }
 
   if (isBlockedHost(parsed.hostname)) {
-    throw new AppError("CRAWL_TARGET_BLOCKED");
+    throw new AppError(crawlTargetBlocked.code, crawlTargetBlocked.message);
   }
 
   if (await hostnameResolvesToBlockedAddress(parsed.hostname)) {
-    throw new AppError("CRAWL_TARGET_BLOCKED");
+    throw new AppError(crawlTargetBlocked.code, crawlTargetBlocked.message);
   }
 
   parsed.hash = "";

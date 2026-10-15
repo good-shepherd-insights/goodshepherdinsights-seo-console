@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { domainInvalid, insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid } from "@/shared/errors";
 import { supportsWebSearchCountry } from "@/shared/prompt-search-countries";
 import {
   llmAggregatedTotalSchema,
@@ -97,10 +98,7 @@ export async function fetchLlmMentionsSearch(
     .array(llmMentionItemSchema)
     .safeParse(firstResult(task)?.items ?? []);
   if (!items.success) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO llm_mentions/search returned an invalid mention items shape",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
   }
   return { data: items.data, billing: buildTaskBilling(task) };
 }
@@ -142,10 +140,7 @@ export async function fetchLlmAggregatedMetrics(
     firstResult(task)?.total ?? {},
   );
   if (!total.success) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO llm_mentions/aggregated_metrics returned an invalid shape",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
   }
   return { data: total.data, billing: buildTaskBilling(task) };
 }
@@ -189,10 +184,7 @@ export async function fetchLlmTopPages(
     .array(llmTopPagesItemSchema)
     .safeParse(firstResult(task)?.items ?? []);
   if (!items.success) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO llm_mentions/top_pages returned an invalid shape",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
   }
   return { data: items.data, billing: buildTaskBilling(task) };
 }
@@ -215,10 +207,7 @@ export async function fetchLlmCrossAggregatedMetrics(
   input: LlmCrossAggregatedMetricsInput,
 ): Promise<DataforseoApiResponse<LlmCrossAggregatedItem[]>> {
   if (input.groups.length < 2 || input.groups.length > 10) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "DataForSEO llm_mentions/cross_aggregated_metrics requires 2 to 10 target groups",
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
 
   const response = await dataforseoPost(
@@ -248,10 +237,7 @@ export async function fetchLlmCrossAggregatedMetrics(
     .array(llmCrossAggregatedItemSchema)
     .safeParse(firstResult(task)?.items ?? []);
   if (!items.success) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO llm_mentions/cross_aggregated_metrics returned an invalid shape",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
   }
   return { data: items.data, billing: buildTaskBilling(task) };
 }
@@ -287,10 +273,7 @@ export async function fetchLlmResponse(
   // check runs against the live (cached, free) model catalog so newly released
   // models work without a code change.
   if (!(await isKnownLlmModelName(input.modelSlug, input.modelName))) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Unsupported DataForSEO model_name "${input.modelName}" for ${input.modelSlug}`,
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
 
   // `web_search: true` is permission, not an instruction — models regularly
@@ -305,10 +288,7 @@ export async function fetchLlmResponse(
     input.webSearchCountryCode &&
     !supportsWebSearchCountry(input.modelSlug, input.webSearchCountryCode)
   ) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Unsupported web-search country ${input.webSearchCountryCode} for ${input.modelSlug}`,
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
   // The country only geolocates the search: every model rejects it with 40501
   // "you must enable 'web_search'" when search is off (verified 2026-09-30).
@@ -340,10 +320,7 @@ export async function fetchLlmResponse(
 
   const result = llmResponseResultSchema.safeParse(firstResult(task) ?? {});
   if (!result.success) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO llm_responses returned an invalid response shape",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
   }
   return { data: result.data, billing: buildTaskBilling(task) };
 }

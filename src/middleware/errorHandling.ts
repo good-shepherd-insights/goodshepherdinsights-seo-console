@@ -4,6 +4,7 @@ import { waitUntil } from "cloudflare:workers";
 import { shouldCaptureAppErrorCode } from "@/shared/error-codes";
 import { getAuth } from "@/lib/auth";
 import { AppError, asAppError, toClientError } from "@/server/lib/errors";
+import { jsonRequired } from "@/shared/errors";
 import { captureServerError } from "@/server/lib/posthog";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 
@@ -62,7 +63,7 @@ export const errorHandlingMiddleware = createMiddleware({
     }
 
     const appError = isValidatorError(error)
-      ? new AppError("VALIDATION_ERROR")
+      ? new AppError(jsonRequired.code, jsonRequired.message)
       : asAppError(error);
 
     if (shouldCaptureAppErrorCode(appError?.code)) {

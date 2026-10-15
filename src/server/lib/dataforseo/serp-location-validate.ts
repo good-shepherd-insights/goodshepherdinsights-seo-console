@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { dataforseoPost } from "@/server/lib/dataforseo/core";
 import { invalidFieldName } from "@/server/lib/dataforseo/envelope";
 import { AppError } from "@/server/lib/errors";
@@ -73,13 +74,7 @@ export async function assertSerpLocationNameAccepted(input: {
     return;
   }
   if (invalidFieldName(task.status_message) !== "location_name") {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `DataForSEO rejected this tracker: ${task.status_message}`,
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message)
   }
-  throw new AppError(
-    "VALIDATION_ERROR",
-    `"${input.locationName}" is not a Google location name. Call search_serp_locations({ query: "${input.locationName.split(",")[0].trim()}"${input.countryCode ? `, countryCode: "${input.countryCode}"` : ""} }) and pass the returned locationName exactly.`,
-  );
+  throw new AppError(domainInvalid.code, domainInvalid.message)
 }

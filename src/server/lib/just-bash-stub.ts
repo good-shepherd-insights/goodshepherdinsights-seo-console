@@ -14,6 +14,9 @@
  * Remove once https://github.com/cloudflare/agents/issues/1673 lands and
  * @cloudflare/think loads just-bash lazily.
  */
+import { AppError } from "@/server/lib/errors";
+import { notImplemented } from "@/shared/errors";
+
 const STUBBED_MESSAGE =
   "just-bash is stubbed out of the worker bundle (see " +
   "vite-plugin-lean-worker-bundle.ts); " +
@@ -26,10 +29,10 @@ const STUBBED_MESSAGE =
 // oxlint-disable-next-line typescript-eslint/no-extraneous-class
 export class Bash {
   constructor() {
-    throw new Error(STUBBED_MESSAGE);
+    throw new AppError(notImplemented.code, notImplemented.message);
   }
 }
 
 export function defineCommand(): never {
-  throw new Error(STUBBED_MESSAGE);
+  throw new AppError(notImplemented.code, notImplemented.message);
 }

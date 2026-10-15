@@ -1,4 +1,5 @@
 import { AppError } from "@/server/lib/errors";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { MAX_DATAFORSEO_FILTER_CONDITIONS } from "@/types/schemas/domain";
 
 /**
@@ -69,10 +70,7 @@ export function buildIncludeOrGroup(
  */
 export function assertFilterConditionBudget(conditionCount: number): void {
   if (conditionCount > MAX_DATAFORSEO_FILTER_CONDITIONS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Too many filter conditions (${conditionCount} of ${MAX_DATAFORSEO_FILTER_CONDITIONS} max).`,
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message)
   }
 }
 

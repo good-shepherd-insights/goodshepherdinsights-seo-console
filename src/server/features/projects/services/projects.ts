@@ -8,6 +8,12 @@ import type {
 import { ProjectRepository } from "@/server/features/projects/repositories/ProjectRepository";
 import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
 import { AppError } from "@/server/lib/errors";
+import {
+  domainInvalid,
+  notFound,
+  projectArchiveOnly,
+  projectDefault,
+} from "@/shared/errors";
 import { assertLanguageForLocation } from "@/server/lib/market";
 import { getLanguageCode } from "@/shared/keyword-locations";
 
@@ -99,10 +105,7 @@ function normalizeProjectDomain(domain: string | undefined) {
   try {
     return normalizeBacklinksTarget(domain, { scope: "domain" }).apiTarget;
   } catch {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Enter a valid domain, like acme.com.",
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
 }
 
@@ -155,7 +158,7 @@ export async function archiveProject(
 ) {
   const remaining = await ProjectRepository.countProjects(organizationId);
   if (remaining <= 1) {
-    throw new AppError("CONFLICT", "You can't archive your only project.");
+    throw new AppError(projectArchiveOnly.code, projectArchiveOnly.message);
   }
 
   await ProjectRepository.archiveProject(input.projectId, organizationId);
@@ -181,10 +184,7 @@ export async function restoreProject(
     // restore only writes archived_at — so a UNIQUE failure can only mean an
     // active Default/no-domain project already exists.
     if (isUniqueViolation(error)) {
-      throw new AppError(
-        "CONFLICT",
-        'An active project named "Default" with no domain already exists. Rename it first, then restore this one.',
-      );
+      throw new AppError(projectDefault.code, projectDefault.message);
     }
     throw error;
   }
@@ -200,7 +200,7 @@ export async function getProjectForOrganization(
     organizationId,
   );
   if (!project) {
-    throw new AppError("NOT_FOUND");
+    throw new AppError(notFound.code, notFound.message);
   }
 
   return mapProject(project);
@@ -223,7 +223,7 @@ export async function setProjectWebsite(
   input: SetProjectWebsiteInput,
 ) {
   const domain = normalizeProjectDomain(input.domain);
-  if (!domain) throw new AppError("VALIDATION_ERROR", "Enter a valid domain.");
+  if (!domain) throw new AppError(domainInvalid.code, domainInvalid.message);
   assertLanguageForLocation(input.locationCode, input.languageCode);
   const row = await ProjectRepository.updateProjectWebsite(
     input.projectId,

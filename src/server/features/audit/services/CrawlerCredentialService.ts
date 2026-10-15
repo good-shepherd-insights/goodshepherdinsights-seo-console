@@ -1,13 +1,12 @@
 import { symmetricDecrypt, symmetricEncrypt } from "better-auth/crypto";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { CrawlerCredentialRepository } from "@/server/features/audit/repositories/CrawlerCredentialRepository";
-import {
-  checkShopifySignature,
+import {   checkShopifySignature,
   type ShopifySignatureProblem,
 } from "@/server/features/audit/services/shopifySignature";
 import { AppError } from "@/server/lib/errors";
 import { getOptionalEnvValue } from "@/server/lib/runtime-env";
-import {
-  isCrawlerAccessExpired,
+import {   isCrawlerAccessExpired,
   parseSignatureExpiry,
   shopifyCrawlerHeaders,
   type CrawlerAccess,
@@ -113,7 +112,7 @@ async function saveCrawlerCredential(input: {
   const saved = (
     await CrawlerCredentialRepository.listForOrganization(input.organizationId)
   ).find((row) => row.projectId === input.projectId && row.host === input.host);
-  if (!saved) throw new AppError("INTERNAL_ERROR");
+  if (!saved) throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
   return { credential: toSummary(saved) };
 }
 

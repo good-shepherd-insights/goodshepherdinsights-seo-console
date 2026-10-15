@@ -1,6 +1,10 @@
 import { normalizeBacklinksTarget } from "@/server/lib/dataforseoBacklinksTarget";
 import { AppError } from "@/server/lib/errors";
 import {
+  nameRequired,
+  urlInvalid,
+} from "@/shared/errors";
+import {
   CUSTOM_SECTION_KEY_PREFIX,
   PROSE_MAX_CHARS,
   type KeyPageRole,
@@ -45,10 +49,7 @@ const MAX_KEY_PAGES = 100;
 
 function assertProseFits(content: string) {
   if (content.length > PROSE_MAX_CHARS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Sections are capped at ${PROSE_MAX_CHARS} characters. Summarize instead of pasting.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 }
 
@@ -133,10 +134,7 @@ export function resolveContextUpdates(
         return;
       }
       if (!customKeys.has(key) && customKeys.size >= MAX_CUSTOM_SECTIONS) {
-        throw new AppError(
-          "VALIDATION_ERROR",
-          `A project can hold ${MAX_CUSTOM_SECTIONS} custom sections. Delete one first.`,
-        );
+        throw new AppError(nameRequired.code, nameRequired.message);
       }
       resolved.push({
         kind: "upsertSection",
@@ -170,10 +168,7 @@ export function resolveContextUpdates(
       );
       const additions = rows.filter((row) => !domains.has(row.domain)).length;
       if (domains.size + additions > MAX_COMPETITORS) {
-        throw new AppError(
-          "VALIDATION_ERROR",
-          `A project can track ${MAX_COMPETITORS} competitors. Remove some first.`,
-        );
+        throw new AppError(nameRequired.code, nameRequired.message);
       }
       resolved.push({ kind: "upsertCompetitors", rows });
       for (const row of rows) domains.add(row.domain);
@@ -202,10 +197,7 @@ export function resolveContextUpdates(
       );
       const additions = rows.filter((row) => !urls.has(row.url)).length;
       if (urls.size + additions > MAX_KEY_PAGES) {
-        throw new AppError(
-          "VALIDATION_ERROR",
-          `A project can hold ${MAX_KEY_PAGES} key pages. This is a shortlist, not a page inventory.`,
-        );
+        throw new AppError(nameRequired.code, nameRequired.message);
       }
       resolved.push({ kind: "upsertKeyPages", rows });
       for (const row of rows) urls.add(row.url);

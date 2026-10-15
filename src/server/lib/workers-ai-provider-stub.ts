@@ -10,6 +10,9 @@
  * dead code; this stub keeps it out of the eager worker bundle. Same pattern
  * as just-bash-stub.ts.
  */
+import { AppError } from "@/server/lib/errors";
+import { notImplemented } from "@/shared/errors";
+
 const STUBBED_MESSAGE =
   "workers-ai-provider is stubbed out of the worker bundle to keep it out of " +
   "the eager isolate startup graph (see vite-plugin-lean-worker-bundle.ts); " +
@@ -18,13 +21,13 @@ const STUBBED_MESSAGE =
 // Covers every named import in the dependency graph: `createWorkersAI` (root),
 // `anthropic` (/anthropic) and `openai` (/openai).
 export function createWorkersAI(): never {
-  throw new Error(STUBBED_MESSAGE);
+  throw new AppError(notImplemented.code, notImplemented.message);
 }
 
 export function anthropic(): never {
-  throw new Error(STUBBED_MESSAGE);
+  throw new AppError(notImplemented.code, notImplemented.message);
 }
 
 export function openai(): never {
-  throw new Error(STUBBED_MESSAGE);
+  throw new AppError(notImplemented.code, notImplemented.message);
 }

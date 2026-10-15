@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { AppError } from "@/server/lib/errors";
 import type { DataforseoErrorClassifier } from "@/server/lib/dataforseo/core";
 import type { ErrorCode } from "@/shared/error-codes";
@@ -104,10 +105,7 @@ export function buildTaskBilling(
 ): DataforseoApiCallCost {
   const billing = tryBuildTaskBilling(task);
   if (!billing) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO task is missing billing metadata (path/cost)",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
   return billing;
 }
@@ -258,10 +256,7 @@ export function assertOk<T extends DataforseoTaskLike>(
   options: AssertOkOptions = {},
 ): T {
   if (!response) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "DataForSEO returned an empty response",
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
   const { classify, classifyPath, treatNoResultsAsEmpty, okTaskStatusCode } =
     options;
@@ -276,7 +271,7 @@ export function assertOk<T extends DataforseoTaskLike>(
 
   const task = response.tasks?.[0];
   if (!task) {
-    throw new AppError("INTERNAL_ERROR", "DataForSEO response missing task");
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
 
   if (task.status_code !== (okTaskStatusCode ?? 20000)) {
@@ -346,10 +341,7 @@ export function parseTaskItems<T extends z.ZodTypeAny>(
       `dataforseo.${endpoint}.invalid-payload`,
       parsed.error.issues.slice(0, 5),
     );
-    throw new AppError(
-      "INTERNAL_ERROR",
-      `DataForSEO ${endpoint} returned an invalid response shape`,
-    );
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
   return parsed.data;
 }

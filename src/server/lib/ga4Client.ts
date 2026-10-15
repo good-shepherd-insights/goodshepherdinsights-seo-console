@@ -1,13 +1,14 @@
 /* eslint-disable max-lines -- one client module per Google integration (gscClient precedent); GA4 spans the Admin and Data APIs */
 import { z } from "zod";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { getGoogleAccessToken } from "@/server/features/google/googleOAuth";
-import {
-  Ga4AdminApiError,
+import {   Ga4AdminApiError,
   Ga4DataApiError,
   Ga4MalformedResponseError,
   Ga4TokenError,
 } from "@/server/lib/ga4Errors";
 import { GA4_OAUTH_PROVIDER_ID } from "@/shared/ga4";
+import { AppError } from "@/server/lib/errors";
 
 const GA4_ADMIN_API_BASE = "https://analyticsadmin.googleapis.com/v1beta";
 const GA4_ADMIN_ALPHA_API_BASE =
@@ -231,9 +232,7 @@ export function createGa4AdminClient(opts: {
         if (!pageToken) return properties;
       }
 
-      throw new Error(
-        "Google Analytics property discovery exceeded 100 pages.",
-      );
+      throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
     },
 
     async getProperty(propertyId: string): Promise<Ga4Property> {

@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import { AppError } from "@/server/lib/errors";
+import { authConfigMissing, unauthenticated } from "@/shared/errors";
 import { validateTeamDomain } from "@/shared/selfhost-checks";
 import { classifyAccessVerificationError } from "./accessTokenErrors";
 import { resolveSharedWorkspaceContext } from "./delegated";
@@ -30,7 +31,7 @@ function getValidatedTeamDomain(teamDomain: string) {
   const result = validateTeamDomain(teamDomain);
 
   if (!result.ok) {
-    throw new AppError("AUTH_CONFIG_MISSING", result.message);
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   return result.origin;
@@ -51,10 +52,7 @@ export async function resolveCloudflareAccessContext(
     ]
       .filter(Boolean)
       .join(" and ");
-    throw new AppError(
-      "AUTH_CONFIG_MISSING",
-      `Missing Cloudflare Access configuration: set ${missing} on the deployment. See docs/SELF_HOSTING_CLOUDFLARE.md.`,
-    );
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   const token = headers.get("cf-access-jwt-assertion");
@@ -63,10 +61,7 @@ export async function resolveCloudflareAccessContext(
     // With Access enabled in front of the deployment, every request carries
     // this header — its absence means Access is not actually protecting the
     // route, which is a setup problem, not a signed-out user.
-    throw new AppError(
-      "AUTH_CONFIG_MISSING",
-      "No Cloudflare Access token on the request. Cloudflare Access is not enabled in front of this deployment — add an Access application covering this hostname in Zero Trust, or set AUTH_MODE=local_noauth if you intend to run without auth on a private network.",
-    );
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   // Only the token verification itself is classified — anything thrown past
@@ -91,7 +86,7 @@ export async function resolveCloudflareAccessContext(
   const userEmail = typeof payload.email === "string" ? payload.email : null;
 
   if (!userId || !userEmail) {
-    throw new AppError("UNAUTHENTICATED");
+    throw new AppError(unauthenticated.code, unauthenticated.message);
   }
 
   return resolveSharedWorkspaceContext(userId, userEmail);

@@ -1,5 +1,6 @@
 import { errors as joseErrors } from "jose";
 import { AppError } from "@/server/lib/errors";
+import { unauthenticated, authConfigMissing } from "@/shared/errors";
 
 // Maps a jwtVerify failure to the right AppError. Config mistakes (wrong
 // POLICY_AUD, TEAM_DOMAIN pointing at the wrong team, unreachable JWKS) must
@@ -9,23 +10,17 @@ import { AppError } from "@/server/lib/errors";
 // (expired, bad signature) stay UNAUTHENTICATED: re-authenticating fixes them.
 export function classifyAccessVerificationError(error: unknown): AppError {
   if (error instanceof joseErrors.JWTExpired) {
-    return new AppError("UNAUTHENTICATED");
+    return new AppError(unauthenticated.code, unauthenticated.message);
   }
 
   if (error instanceof joseErrors.JWTClaimValidationFailed) {
     if (error.claim === "aud") {
-      return new AppError(
-        "AUTH_CONFIG_MISSING",
-        "Cloudflare Access token rejected: audience mismatch. POLICY_AUD does not match your Access application's AUD tag — copy it from Zero Trust -> Access controls -> Applications -> Configure -> Additional settings.",
-      );
+      return new AppError(authConfigMissing.code, authConfigMissing.message);
     }
     if (error.claim === "iss") {
-      return new AppError(
-        "AUTH_CONFIG_MISSING",
-        "Cloudflare Access token rejected: issuer mismatch. TEAM_DOMAIN does not match the Cloudflare team that issued the token — check it against your team domain in Zero Trust settings.",
-      );
+      return new AppError(authConfigMissing.code, authConfigMissing.message);
     }
-    return new AppError("UNAUTHENTICATED");
+    return new AppError(unauthenticated.code, unauthenticated.message);
   }
 
   if (
@@ -37,11 +32,8 @@ export function classifyAccessVerificationError(error: unknown): AppError {
     // browsers/node, plain Error like "Network connection lost" in workerd).
     !(error instanceof joseErrors.JOSEError)
   ) {
-    return new AppError(
-      "AUTH_CONFIG_MISSING",
-      "Could not verify the Cloudflare Access token against TEAM_DOMAIN's signing keys. Check that TEAM_DOMAIN is your team's https://<team>.cloudflareaccess.com domain.",
-    );
+    return new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
-  return new AppError("UNAUTHENTICATED");
+  return new AppError(unauthenticated.code, unauthenticated.message);
 }

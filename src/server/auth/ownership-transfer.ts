@@ -1,4 +1,5 @@
 import type { OrgPermissionRequest } from "@/lib/org-permissions";
+import { insufficientCredits, projectDefault, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import type { EnsuredUserContext } from "@/middleware/ensure-user/types";
 import { requireOrgPermission } from "@/server/auth/org-gate";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
@@ -22,13 +23,10 @@ export async function transferOrganizationOwnership(
     context.organizationId,
   );
   if (!newOwner) {
-    throw new AppError("NOT_FOUND");
+    throw new AppError(notFound.code, notFound.message);
   }
   if (newOwner.userId === context.userId) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "You already own this organization.",
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message)
   }
 
   await AuthRepository.transferOwnership({
@@ -43,6 +41,6 @@ export async function transferOrganizationOwnership(
     context.organizationId,
   );
   if (transferred?.role !== "owner") {
-    throw new AppError("CONFLICT");
+    throw new AppError(projectDefault.code, projectDefault.message);
   }
 }

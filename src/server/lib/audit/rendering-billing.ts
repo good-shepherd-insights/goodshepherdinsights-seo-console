@@ -1,3 +1,4 @@
+import { insufficientCredits } from "@/shared/errors";
 import {
   finalizeHold,
   getOrCreateOrganizationCustomer,
@@ -9,14 +10,12 @@ import {
 import { AppError } from "@/server/lib/errors";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
-import {
-  estimateRenderingCredits,
+import {   estimateRenderingCredits,
   renderingCreditsNeededText,
   renderUsageCredits,
   type RenderUsage,
 } from "@/shared/audit-rendering";
-import {
-  AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
+import {   AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
   AUTUMN_SEO_DATA_TOPUP_BALANCE_FEATURE_ID,
 } from "@/shared/billing";
 

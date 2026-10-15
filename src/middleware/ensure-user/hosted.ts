@@ -3,20 +3,18 @@ import { getActiveOrganizationId } from "@/lib/auth-session";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
 import { resolveActiveHostedOrganization } from "@/server/auth/default-hosted-organization";
 import { AppError } from "@/server/lib/errors";
+import { authConfigMissing, unauthenticated } from "@/shared/errors";
 import type { EnsuredUserContext } from "./types";
 
 async function requireHostedSession(headers: Headers) {
   if (!hasHostedAuthConfig()) {
-    throw new AppError(
-      "AUTH_CONFIG_MISSING",
-      "Missing Better Auth hosted configuration",
-    );
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   const session = await getAuth().api.getSession({ headers });
 
   if (!session?.user?.id || !session.user.email) {
-    throw new AppError("UNAUTHENTICATED");
+    throw new AppError(unauthenticated.code, unauthenticated.message);
   }
 
   return session;

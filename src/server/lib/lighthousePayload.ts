@@ -1,4 +1,6 @@
 import { sortBy } from "remeda";
+import { AppError } from "@/server/lib/errors";
+import { jsonRequired } from "@/shared/errors";
 import type { LighthouseCategory } from "@/shared/lighthouse";
 import { jsonCodec } from "@/shared/json";
 import {
@@ -38,7 +40,7 @@ function parseStoredLighthousePayload(
   try {
     JSON.parse(payloadJson);
   } catch {
-    throw new Error("Invalid Lighthouse payload JSON");
+    throw new AppError(jsonRequired.code, jsonRequired.message);
   }
 
   return null;

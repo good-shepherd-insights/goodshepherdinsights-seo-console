@@ -1,9 +1,9 @@
 import { waitUntil } from "cloudflare:workers";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { identity, sortBy } from "remeda";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import { createDataforseoClient } from "@/server/lib/dataforseo";
-import {
-  buildLlmTarget,
+import {   buildLlmTarget,
   CHATGPT_LANGUAGE_CODE,
   CHATGPT_LOCATION_CODE,
   type LlmPlatform,
@@ -11,24 +11,20 @@ import {
 import type { LlmCrossAggregatedItem } from "@/server/lib/dataforseoLlmSchemas";
 import { AppError } from "@/server/lib/errors";
 import { buildCacheKey, getCached, setCached } from "@/server/lib/r2-cache";
-import {
-  resolveCompetitorGroups,
+import {   resolveCompetitorGroups,
   type CompetitorGroup,
   type CrossOutcome,
 } from "@/server/features/ai-search/services/shareOfVoice";
-import {
-  shapeResult,
+import {   shapeResult,
   type PlatformBundle,
   type PlatformOutcome,
 } from "@/server/features/ai-search/services/brandLookupShaping";
-import {
-  brandLookupResultSchema,
+import {   brandLookupResultSchema,
   type BrandLookupInput,
   type BrandLookupResult,
 } from "@/types/schemas/ai-search";
 import { detectTarget } from "@/shared/targetDetection";
-import {
-  parseResearchTarget,
+import {   parseResearchTarget,
   type ResearchTarget,
 } from "@/shared/researchScope";
 
@@ -198,7 +194,7 @@ function resolveResearchTarget(
   if (!parsed.ok) {
     // An explicit scope that doesn't fit the input (Subfolder without a path)
     // must error, not silently run an unscoped lookup.
-    if (input.scope) throw new AppError("VALIDATION_ERROR", parsed.message);
+    if (input.scope) throw new AppError(domainInvalid.code, domainInvalid.message);
     return null;
   }
   return parsed.target;

@@ -11,6 +11,7 @@ import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
 import { sendHostedInvitationEmail } from "@/server/email/loops";
 import { AppError } from "@/server/lib/errors";
 import { requireAuthenticatedContext } from "@/serverFunctions/middleware";
+import { unauthenticated, notFound, rateLimited, forbidden, projectDefault, serviceUnavailable, crawlTargetBlocked, authConfigMissing } from "@/shared/errors";
 
 // The client's source of truth for "who am I in this organization": the active
 // org, the caller's role from their member row (resolved server-side by
@@ -47,7 +48,7 @@ export const getTeam = createServerFn({ method: "GET" })
       query: { organizationId: context.organizationId },
     });
     if (!fullOrganization) {
-      throw new AppError("NOT_FOUND");
+      throw new AppError(notFound.code, notFound.message);
     }
 
     const canViewInvitations = hasOrgPermission(context.role, {
@@ -83,7 +84,7 @@ export const switchOrganization = createServerFn({ method: "POST" })
       data.organizationId,
     );
     if (!membership) {
-      throw new AppError("NOT_FOUND");
+      throw new AppError(notFound.code, notFound.message);
     }
 
     await getAuth().api.setActiveOrganization({
@@ -136,7 +137,7 @@ export const sendTeamInvitation = createServerFn({ method: "POST" })
           error instanceof APIError &&
           error.body?.code === "USER_IS_ALREADY_A_MEMBER_OF_THIS_ORGANIZATION"
         ) {
-          throw new AppError("CONFLICT");
+          throw new AppError(projectDefault.code, projectDefault.message);
         }
         throw error;
       });
@@ -162,7 +163,7 @@ export const sendTeamInvitation = createServerFn({ method: "POST" })
       // The invitation row exists and stays pending — surface the send
       // failure so the inviter retries instead of assuming it landed.
       console.error("Invitation email send failed:", error);
-      throw new AppError("UPSTREAM_UNAVAILABLE");
+      throw new AppError(serviceUnavailable.code, serviceUnavailable.message);
     }
 
     return { invitationId: invitation.id };

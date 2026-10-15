@@ -10,6 +10,13 @@ import {
 import { RankTrackingRepository } from "@/server/features/rank-tracking/repositories/RankTrackingRepository";
 import { assertSerpLocationNameAccepted } from "@/server/lib/dataforseo/serp-location-validate";
 import { AppError } from "@/server/lib/errors";
+import {
+  domainInvalid,
+  nameRequired,
+  paymentRequired,
+  rankConfigNotFound,
+  rankNoKeywords,
+} from "@/shared/errors";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
 import type {
   RankCheckScheduleTime,
@@ -87,12 +94,7 @@ async function createConfig(input: {
   // history) with the freshly chosen settings, rather than colliding with
   // the unique index. An already-active row is a genuine duplicate.
   if (existing?.isActive) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      locationName
-        ? "This domain + city combination is already being tracked"
-        : "This domain + country combination is already being tracked",
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   // Enforced for reactivations too, not just new rows — otherwise archiving
@@ -101,10 +103,7 @@ async function createConfig(input: {
     input.projectId,
   );
   if (allConfigs.length >= MAX_CONFIGS_PER_PROJECT) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Maximum ${MAX_CONFIGS_PER_PROJECT} tracked domains per project`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   if (existing) {
@@ -218,6 +217,7 @@ async function updateConfig(
   await RankTrackingRepository.updateConfig(configId, projectId, updates);
 }
 
+
 // ---------------------------------------------------------------------------
 // Trigger a manual check
 // ---------------------------------------------------------------------------
@@ -235,10 +235,7 @@ async function triggerCheck(input: {
 
   const keywords = await RankTrackingRepository.getKeywordsForConfig(config.id);
   if (keywords.length === 0) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      "No keywords to track. Add keywords to this domain first.",
-    );
+    throw new AppError(rankNoKeywords.code, rankNoKeywords.message);
   }
 
   if (input.maxCostCredits != null) {
@@ -249,10 +246,7 @@ async function triggerCheck(input: {
       "live",
     );
     if (costCredits > input.maxCostCredits) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        rankCheckCostApprovalError(costCredits, input.maxCostCredits),
-      );
+      throw new AppError(nameRequired.code, nameRequired.message);
     }
   }
 
@@ -403,10 +397,7 @@ async function getTracker(configId: string, projectId: string) {
 async function requireRankCheckAccess(organizationId: string) {
   if (!(await isHostedServerAuthMode())) return;
   if (await customerHasPaidPlan(organizationId)) return;
-  throw new AppError(
-    "PAYMENT_REQUIRED",
-    "Upgrade to the paid plan to run rank checks",
-  );
+  throw new AppError(paymentRequired.code, paymentRequired.message);
 }
 
 // ---------------------------------------------------------------------------
@@ -419,7 +410,7 @@ async function getValidatedConfig(configId: string, projectId: string) {
     projectId,
   });
   if (!config) {
-    throw new AppError("NOT_FOUND", "Rank tracking config not found");
+    throw new AppError(rankConfigNotFound.code, rankConfigNotFound.message);
   }
   return config;
 }
@@ -435,7 +426,7 @@ function normalizeDomain(domain: string): string {
   // Strip www. prefix
   d = d.replace(/^www\./, "");
   if (!d) {
-    throw new AppError("INTERNAL_ERROR", "Invalid domain");
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
   return d;
 }

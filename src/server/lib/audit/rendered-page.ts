@@ -11,6 +11,12 @@ import { classifyFetch } from "./classify-fetch";
 import { MAX_HTML_BYTES, readTextUpTo, truncateToBytes } from "./html-response";
 import { isCrawlableUrl } from "./url-policy";
 import { normalizeUrl } from "./url-utils";
+import { AppError } from "@/server/lib/errors";
+import {
+  renderEmptyResponse,
+  renderFailed,
+  renderInvalidTarget,
+} from "@/shared/errors";
 
 type RenderOptions = {
   // Either renderer may be missing: Docker has no browser binding, and the
@@ -64,9 +70,9 @@ function usableHtml(url: string, finalUrl: string, html: string) {
   // The existing direct fetch records redirects one hop at a time. A browser
   // must not silently substitute another URL's content into this page row.
   if (normalizeUrl(finalUrl, url) !== normalizeUrl(url, url)) {
-    throw new Error("Rendering returned a different URL");
+    throw new AppError(renderInvalidTarget.code, renderInvalidTarget.message);
   }
-  if (!html.trim()) throw new Error("Rendered HTML is empty");
+  if (!html.trim()) throw new AppError(renderEmptyResponse.code, renderEmptyResponse.message);
   return truncateToBytes(html, MAX_HTML_BYTES);
 }
 
@@ -145,7 +151,7 @@ async function renderWithContext(
     creditsUsed = usage.success
       ? (usage.data.key_metadata?.credits_consumed ?? null)
       : null;
-    if (!response.ok) throw new Error(`Rendering provider HTTP ${httpStatus}`);
+    if (!response.ok) throw new AppError(renderFailed.code, renderFailed.message);
     const data = contextSchema.parse(json);
     html = usableHtml(url, data.metadata.finalUrl, data.html);
   } catch {
@@ -167,7 +173,7 @@ async function renderPage(
   options: RenderOptions,
 ): Promise<RenderedPage> {
   if (!isCrawlableUrl(url) || new URL(url).username || new URL(url).password) {
-    throw new Error("Invalid rendering target");
+    throw new AppError(renderInvalidTarget.code, renderInvalidTarget.message);
   }
 
   if (options.browser) {
@@ -197,7 +203,7 @@ async function renderPage(
     // Context reports no origin status.
     if (html) return { html, status: null };
   }
-  throw new Error("Unable to render this page");
+  throw new AppError(renderFailed.code, renderFailed.message);
 }
 
 export const RenderedPageService = { renderPage } as const;

@@ -1,5 +1,8 @@
 import { ReportTemplateRepository } from "@/server/features/reports/repositories/ReportTemplateRepository";
 import { AppError } from "@/server/lib/errors";
+import {
+  nameRequired,
+} from "@/shared/errors";
 import { formatCount } from "@/shared/format";
 import {
   REPORT_TEMPLATE_MAX_DESCRIPTION_CHARS,
@@ -39,10 +42,7 @@ async function getReportTemplate(
 }
 
 function notFound(templateId: string) {
-  return new AppError(
-    "NOT_FOUND",
-    `No report template ${templateId} in this project. Call list_report_templates to see what exists.`,
-  );
+  return new AppError("NOT_FOUND", "We couldn't find that. It may have been moved or deleted.");
 }
 
 type SaveParams = {
@@ -71,37 +71,22 @@ async function saveReportTemplate(params: SaveParams): Promise<{
   const instructions = params.instructions.trim();
 
   if (name.length === 0) {
-    throw new AppError("VALIDATION_ERROR", "Give the template a name.");
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   if (name.length > REPORT_TEMPLATE_MAX_NAME_CHARS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Name is ${formatCount(name.length)} characters; the limit is ${formatCount(REPORT_TEMPLATE_MAX_NAME_CHARS)}. Shorten it and save again.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   if (description.length === 0) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Add a one-line description saying when to use this template. It is what an agent reads to decide.",
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   if (description.length > REPORT_TEMPLATE_MAX_DESCRIPTION_CHARS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Description is ${formatCount(description.length)} characters; the limit is ${formatCount(REPORT_TEMPLATE_MAX_DESCRIPTION_CHARS)}. It is one line saying when to use the template — move the detail into the instructions.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   if (instructions.length === 0) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Add instructions: the audience, the sections in order, the tone, and the sign-off.",
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   if (instructions.length > REPORT_TEMPLATE_MAX_INSTRUCTIONS_CHARS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Instructions are ${formatCount(instructions.length)} characters; the limit is ${formatCount(REPORT_TEMPLATE_MAX_INSTRUCTIONS_CHARS)}. A template is a brief, not the report — say the audience, the sections in order, the tone and the sign-off, and cut the rest.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   // One read serves the existence check, the duplicate-name check and the cap.
@@ -112,10 +97,7 @@ async function saveReportTemplate(params: SaveParams): Promise<{
     ? templates.find((template) => template.id === params.templateId)
     : undefined;
   if (params.templateId && !existing) {
-    throw new AppError(
-      "NOT_FOUND",
-      `No report template ${params.templateId} in this project. Call list_report_templates, or omit templateId to create a new one.`,
-    );
+    throw notFound(params.templateId);
   }
 
   // A name that appears twice in a project makes "use the monthly check-in
@@ -126,10 +108,7 @@ async function saveReportTemplate(params: SaveParams): Promise<{
       template.name.toLowerCase() === lowerName && template.id !== existing?.id,
   );
   if (clash) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `A template named "${clash.name}" exists in this project (id ${clash.id}). Pass its templateId to update it, or choose another name.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   if (existing) {
@@ -146,10 +125,7 @@ async function saveReportTemplate(params: SaveParams): Promise<{
   // Plain read-then-write: concurrent saves can both pass at the cap, which is
   // accepted — this is a guardrail, not an invariant, and the next save refuses.
   if (templates.length >= REPORT_TEMPLATE_MAX_PER_PROJECT) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `This project has ${formatCount(REPORT_TEMPLATE_MAX_PER_PROJECT)} report templates, the limit. Delete one from the Templates page.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   const id = crypto.randomUUID();

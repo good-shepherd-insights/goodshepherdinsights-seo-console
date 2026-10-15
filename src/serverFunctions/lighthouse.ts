@@ -11,6 +11,7 @@ import {
   lighthouseAuditExportSchema,
   lighthouseAuditIssueSchema,
 } from "@/types/schemas/lighthouse";
+import { forbidden, notFound, rateLimited, serviceUnavailable, unauthenticated } from "@/shared/errors";
 
 async function getAuditLighthouseData(input: {
   projectId: string;
@@ -22,12 +23,12 @@ async function getAuditLighthouseData(input: {
   });
 
   if (!site) {
-    throw new AppError("NOT_FOUND");
+    throw new AppError(notFound.code, notFound.message);
   }
 
   const r2Key = site.lighthouse.r2Key;
   if (!r2Key) {
-    throw new AppError("NOT_FOUND");
+    throw new AppError(notFound.code, notFound.message);
   }
 
   const payloadJson = await getJsonFromR2(r2Key);

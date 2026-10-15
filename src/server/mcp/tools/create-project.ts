@@ -2,6 +2,7 @@ import { requireOrgPermission } from "@/server/auth/org-gate";
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
 import { ProjectService } from "@/server/features/projects/services/ProjectService";
 import { AppError } from "@/server/lib/errors";
+import { forbidden, jsonRequired } from "@/shared/errors";
 import { mcpResponse } from "@/server/mcp/formatters";
 import { type ToolContext } from "@/server/mcp/context";
 import { optionalMetaOutputSchema } from "@/server/mcp/output-schemas";
@@ -58,10 +59,7 @@ async function resolveTargetOrganization(
 ) {
   if (auth.orgScope !== "user") {
     if (organizationId && organizationId !== auth.organizationId) {
-      throw new AppError(
-        "FORBIDDEN",
-        "This connection is bound to a single organization — omit organizationId.",
-      );
+      throw new AppError(forbidden.code, forbidden.message);
     }
     return { organizationId: auth.organizationId, role: auth.role };
   }
@@ -72,10 +70,7 @@ async function resolveTargetOrganization(
       (candidate) => candidate.organizationId === organizationId,
     );
     if (!membership) {
-      throw new AppError(
-        "FORBIDDEN",
-        "The user is not a member of that organization.",
-      );
+      throw new AppError(forbidden.code, forbidden.message);
     }
     return { organizationId, role: membership.role };
   }
@@ -84,7 +79,7 @@ async function resolveTargetOrganization(
     return { organizationId: only.organizationId, role: only.role };
   }
   if (memberships.length === 0) {
-    throw new AppError("FORBIDDEN");
+    throw new AppError(forbidden.code, forbidden.message);
   }
   const organizationList = memberships
     .map(
@@ -92,10 +87,7 @@ async function resolveTargetOrganization(
         `- ${membership.organizationId}  ${membership.organizationName}`,
     )
     .join("\n");
-  throw new AppError(
-    "VALIDATION_ERROR",
-    `The user belongs to ${memberships.length} organizations. Ask the user which organization this project should be created in, then retry with organizationId set:\n${organizationList}`,
-  );
+  throw new AppError(jsonRequired.code, jsonRequired.message);
 }
 
 export const createProjectTool = {
@@ -141,10 +133,7 @@ export const createProjectTool = {
     // is stripped here — it was consumed above.
     const parsedInput = createProjectSchema.safeParse(args);
     if (!parsedInput.success) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        z.prettifyError(parsedInput.error),
-      );
+      throw new AppError(jsonRequired.code, jsonRequired.message);
     }
     const input = parsedInput.data;
     const project = await ProjectService.createProject(

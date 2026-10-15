@@ -1,12 +1,12 @@
 import { env } from "cloudflare:workers";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { and, eq, inArray, isNull, like } from "drizzle-orm";
 import { firstBy, identity } from "remeda";
 import { db } from "@/db";
 import { runBatch } from "@/db/runBatch";
 import { getAuthMode } from "@/lib/auth-mode";
 import { AppError } from "@/server/lib/errors";
-import {
-  ga4Connections,
+import {   ga4Connections,
   gscConnections,
   organization,
   organizationActivationState,
@@ -52,10 +52,7 @@ async function mergeLegacyWorkspaces() {
   // delegated-local-admin — merging would strand its data in a workspace that
   // mode never shows) or should not exist at all (hosted).
   if (getAuthMode(env.AUTH_MODE) !== "cloudflare_access") {
-    throw new AppError(
-      "FORBIDDEN",
-      "Workspace merge is only available in cloudflare_access auth mode.",
-    );
+    throw new AppError(forbidden.code, forbidden.message)
   }
 
   const legacyOrgs = await db

@@ -20,6 +20,7 @@ import {
   requireAuthenticatedContext,
   requireProjectContext,
 } from "@/serverFunctions/middleware";
+import { rateLimited } from "@/shared/errors";
 
 const projectScopedSchema = z.object({ projectId: z.string().min(1) });
 const setPropertySchema = projectScopedSchema.extend({
@@ -132,7 +133,7 @@ export const getGa4DashboardReport = createServerFn({ method: "POST" })
         error instanceof Ga4ReportError &&
         error.code === "ga4_quota_exhausted"
       ) {
-        throw new AppError("RATE_LIMITED");
+        throw new AppError(rateLimited.code, rateLimited.message);
       }
       throw error;
     }

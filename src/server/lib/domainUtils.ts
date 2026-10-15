@@ -1,4 +1,5 @@
 import { getDomain } from "tldts";
+import { domainInvalid, domainRequired } from "@/shared/errors";
 import { AppError } from "@/server/lib/errors";
 import {
   isValidDomainHost,
@@ -13,7 +14,7 @@ export function parseResearchTargetOrThrow(
 ): ResearchTarget {
   const parsed = parseResearchTarget(input, scope);
   if (!parsed.ok) {
-    throw new AppError("VALIDATION_ERROR", parsed.message);
+    throw new AppError(domainInvalid.code, parsed.message);
   }
   return parsed.target;
 }
@@ -35,7 +36,7 @@ export function normalizeDomainInput(
 ): string {
   const trimmed = input.trim().toLowerCase();
   if (!trimmed) {
-    throw new AppError("VALIDATION_ERROR", "Domain is required");
+    throw new AppError(domainRequired.code, domainRequired.message);
   }
 
   const withProtocol = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//.test(trimmed)
@@ -46,20 +47,17 @@ export function normalizeDomainInput(
   try {
     host = new URL(withProtocol).hostname.toLowerCase().replace(/^www\./, "");
   } catch {
-    throw new AppError("VALIDATION_ERROR", "Domain is invalid");
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
 
   if (!host) {
-    throw new AppError("VALIDATION_ERROR", "Domain is invalid");
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
 
   // Reject fake TLDs / non-registrable hosts (e.g. "example.por") before they
   // reach DataForSEO and come back as an opaque "Invalid Field: 'target'".
   if (!isValidDomainHost(host)) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Enter a valid domain like example.com",
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message);
   }
 
   if (includeSubdomains) {

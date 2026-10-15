@@ -8,6 +8,12 @@ export const userAdditionalFields = {
     required: false as const,
     input: true as const,
   },
+  agentId: {
+    type: "string" as const,
+    defaultValue: () => crypto.randomUUID(),
+    required: false as const,
+    input: false as const,
+  },
 };
 
 export const baseAuthOptions = {

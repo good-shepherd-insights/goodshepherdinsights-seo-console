@@ -1,4 +1,6 @@
 import { AuthRepository } from "@/server/auth/repositories/AuthRepository";
+import { AppError } from "@/server/lib/errors";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { markDubReferredOrganization } from "@/server/referrals/dub";
 import { slugify, toHex } from "./org-slug";
 
@@ -34,7 +36,7 @@ async function getHostedUser(userId: string) {
   const hostedUser = await AuthRepository.getHostedUser(userId);
 
   if (!hostedUser?.email) {
-    throw new Error("Failed to resolve hosted user for session setup");
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
 
   return hostedUser;

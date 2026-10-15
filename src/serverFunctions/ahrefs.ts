@@ -4,6 +4,7 @@ import { chunk } from "remeda";
 import { z } from "zod";
 import { normalizeDomainInput } from "@/server/lib/domainUtils";
 import { requireProjectContext } from "@/serverFunctions/middleware";
+import { unauthenticated, notFound, rateLimited, forbidden, projectDefault, serviceUnavailable, crawlTargetBlocked, authConfigMissing } from "@/shared/errors";
 
 /**
  * Ahrefs publishes a free, keyless Domain Rating lookup. We use it to enrich the
@@ -94,12 +95,12 @@ async function fetchDomainRating(domain: string): Promise<number | null> {
     { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) },
   );
   if (!response.ok) {
-    throw new Error(`Ahrefs DR lookup failed with status ${response.status}`);
+    throw new Error("Ahrefs DR lookup failed. Please try again.");
   }
 
   const parsed = ahrefsResponseSchema.safeParse(await response.json());
   if (!parsed.success) {
-    throw new Error("Ahrefs DR lookup returned an unexpected response");
+    throw new Error("Ahrefs DR lookup returned an unexpected response.");
   }
 
   // Ahrefs returns 200 with DR 0 for domains it has no rating for (new or

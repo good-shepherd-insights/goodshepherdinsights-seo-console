@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { waitUntil } from "cloudflare:workers";
 import { z } from "zod";
-import {
-  requireAuthenticatedContext,
+import {   requireAuthenticatedContext,
   requireProjectContext,
 } from "@/serverFunctions/middleware";
 import { AppError } from "@/server/lib/errors";
@@ -36,7 +36,7 @@ export const createSamSession = createServerFn({ method: "POST" })
       userId: context.userId,
     });
     if (!session) {
-      throw new AppError("INTERNAL_ERROR", "Failed to create chat session");
+      throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
     }
     waitUntil(
       captureServerEvent({
@@ -71,7 +71,7 @@ export const archiveSamSession = createServerFn({ method: "POST" })
         )
       : null;
     if (!session || !project) {
-      throw new AppError("NOT_FOUND", "Chat session not found");
+      throw new AppError(notFound.code, notFound.message)
     }
     await SamSessionRepository.archiveSession(data.sessionId);
     waitUntil(

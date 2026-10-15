@@ -3,13 +3,28 @@ import {
   type WorkflowEvent,
   type WorkflowStep,
 } from "cloudflare:workers";
+import {
+  insufficientCredits,
+  serviceUnavailable,
+  serviceTaskMissing,
+  urlInvalid,
+  domainInvalid,
+  crawlTargetBlocked,
+  forbidden,
+  notImplemented,
+  jsonRequired,
+  domainRequired,
+  unauthenticated,
+  notFound,
+  rateLimited,
+  authConfigMissing,
+} from "@/shared/errors";
 import { NonRetryableError } from "cloudflare:workflows";
 import { withPgClient } from "@/db";
 import type { BillingCustomerContext } from "@/server/billing/subscription";
 import { RankTrackingRepository } from "@/server/features/rank-tracking/repositories/RankTrackingRepository";
 import { failRunIfActive } from "@/server/features/rank-tracking/services/rankCheckRunGuards";
-import {
-  runLiveCheck,
+import {   runLiveCheck,
   runQueuedCheck,
   type QueuedCheckStats,
 } from "@/server/workflows/rankCheckPaths";
@@ -18,12 +33,10 @@ import { createDataforseoClient } from "@/server/lib/dataforseo";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { AppError } from "@/server/lib/errors";
 import { autumn } from "@/server/billing/autumn";
-import {
-  AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
+import {   AUTUMN_SEO_DATA_BALANCE_FEATURE_ID,
   AUTUMN_SEO_DATA_TOPUP_BALANCE_FEATURE_ID,
 } from "@/shared/billing";
-import {
-  estimateRankCheckCredits,
+import {   estimateRankCheckCredits,
   rankCheckCostApprovalError,
 } from "@/shared/rank-tracking";
 import { isHostedServerAuthMode } from "@/server/lib/runtime-env";
@@ -82,7 +95,7 @@ async function prepareRankCheckKeywords(input: {
   }
 
   if (trackingKeywords.length === 0) {
-    throw new AppError("INTERNAL_ERROR", "No keywords to track");
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
 
   const { costCredits } = estimateRankCheckCredits(
@@ -92,10 +105,7 @@ async function prepareRankCheckKeywords(input: {
     input.trigger === "scheduled" ? "queued" : "live",
   );
   if (input.maxCostCredits != null && costCredits > input.maxCostCredits) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      rankCheckCostApprovalError(costCredits, input.maxCostCredits),
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message)
   }
 
   // Verify the user has enough credits for the full check before starting.
@@ -116,10 +126,6 @@ async function prepareRankCheckKeywords(input: {
       (monthlyCheck.balance?.remaining ?? 0) +
       (topupCheck.balance?.remaining ?? 0);
     if (available < costCredits) {
-      throw new AppError(
-        "INSUFFICIENT_CREDITS",
-        "Insufficient credits for rank check",
-      );
     }
   }
 

@@ -1,6 +1,6 @@
 import { AppError } from "@/server/lib/errors";
-import {
-  DEFAULT_LOCATION_CODE,
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
+import {   DEFAULT_LOCATION_CODE,
   getKeywordDataProvider,
   getLanguageOptions,
   isLanguageServedForLocation,
@@ -12,10 +12,7 @@ import {
  */
 export function assertLabsLocationCode(locationCode: number | undefined) {
   if (locationCode != null && getKeywordDataProvider(locationCode) !== "labs") {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Domain analytics is not available for this country. Keyword research and rank tracking work; domain-level data is limited to DataForSEO Labs locations.",
-    );
+    throw new AppError(domainInvalid.code, domainInvalid.message)
   }
 }
 
@@ -32,12 +29,5 @@ export function assertLanguageForLocation(
   if (languageCode == null) return;
   const resolvedLocation = locationCode ?? DEFAULT_LOCATION_CODE;
   if (isLanguageServedForLocation(resolvedLocation, languageCode)) return;
-  throw new AppError(
-    "VALIDATION_ERROR",
-    `Language '${languageCode}' is not available for this location. Available: ${getLanguageOptions(
-      resolvedLocation,
-    )
-      .map((option) => option.code)
-      .join(", ")}.`,
-  );
+  throw new AppError(domainInvalid.code, domainInvalid.message)
 }

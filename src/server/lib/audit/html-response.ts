@@ -1,4 +1,6 @@
 import type { Response as BrowserResponse } from "@cloudflare/workers-types";
+import { AppError } from "@/server/lib/errors";
+import { unauthenticated, notFound, rateLimited, forbidden, projectDefault, serviceUnavailable, crawlTargetBlocked, authConfigMissing } from "@/shared/errors";
 
 export const MAX_HTML_BYTES = 1024 * 1024;
 
@@ -19,7 +21,7 @@ export async function readTextUpTo(
       if (result.done) break;
       const value: unknown = result.value;
       if (!(value instanceof Uint8Array))
-        throw new Error("Expected response bytes");
+        throw new AppError("INTERNAL_ERROR", "Expected response bytes");
 
       const remaining = maxBytes - bytesRead;
       const chunk =

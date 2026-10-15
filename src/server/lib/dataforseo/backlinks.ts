@@ -6,6 +6,7 @@ import {
 import { createDataforseoBillingClassifier } from "@/server/lib/dataforseoBillingClassification";
 import { AppError } from "@/server/lib/errors";
 import { dataforseoPost } from "@/server/lib/dataforseo/core";
+import { insufficientCredits, serviceUnavailable } from "@/shared/errors";
 import {
   assertOk,
   buildTaskBilling,
@@ -188,10 +189,7 @@ export async function fetchBacklinksSummary(input: BacklinksRequest) {
         "dataforseo.backlinks-summary-live.invalid-result",
         parsed.error.issues.slice(0, 5),
       );
-      throw new AppError(
-        "INTERNAL_ERROR",
-        "DataForSEO backlinks-summary-live returned an invalid response shape",
-      );
+      throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
     }
     return {
       data: parsed.data,

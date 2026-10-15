@@ -1,6 +1,9 @@
 import { ReportRepository } from "@/server/features/reports/repositories/ReportRepository";
 import { sharesEnabled } from "@/server/features/reports/shareAccess";
 import { AppError } from "@/server/lib/errors";
+import {
+  nameRequired,
+} from "@/shared/errors";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { formatCount } from "@/shared/format";
 import { mintShareToken } from "@/shared/report-share";
@@ -61,45 +64,30 @@ async function saveReport(params: SaveReportParams): Promise<{
   const { projectId, title, summary, html } = params;
 
   if (title.length > REPORT_MAX_TITLE_CHARS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Title is ${formatCount(title.length)} characters; the limit is ${formatCount(REPORT_MAX_TITLE_CHARS)}. Shorten it and save again.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   if (summary.length > REPORT_MAX_SUMMARY_CHARS) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Summary is ${formatCount(summary.length)} characters; the limit is ${formatCount(REPORT_MAX_SUMMARY_CHARS)}. Shorten it and save again.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   // UTF-8 bytes, not code units: a `.length` check understates multi-byte
   // content and is what actually reaches the column and the worker's heap.
   const sizeBytes = htmlBytes(html);
   if (sizeBytes > REPORT_MAX_HTML_BYTES) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `Report is ${kbUp(sizeBytes)}; the limit is ${kbDown(REPORT_MAX_HTML_BYTES)}. Inlined images are the usual cause. Remove them and save again.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
   // The cheap structural check, not an HTML parser: models have stopped
   // mid-document with no error, and update-in-place would silently destroy the
   // previous good report.
   const trimmed = html.trim().toLowerCase();
   if (!trimmed.includes("<html") || !trimmed.endsWith("</html>")) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "The HTML has no closing </html>; the model stopped early. On Codex, escape backticks and ${.",
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   const existing = params.reportId
     ? await ReportRepository.getReport(projectId, params.reportId)
     : null;
   if (params.reportId && !existing) {
-    throw new AppError(
-      "NOT_FOUND",
-      `No report ${params.reportId} in this project. Call list_reports, or omit reportId to create a new one.`,
-    );
+    throw notFound(params.reportId);
   }
 
   // Titles are unique within a project, which the skills state as a contract
@@ -121,10 +109,7 @@ async function saveReport(params: SaveReportParams): Promise<{
     // storage guardrail, not an invariant, and the next save refuses.
     const total = await ReportRepository.countReports(projectId);
     if (total >= REPORT_MAX_PER_PROJECT) {
-      throw new AppError(
-        "VALIDATION_ERROR",
-        `This project has ${formatCount(REPORT_MAX_PER_PROJECT)} reports, the limit. Delete one from the Reports page.`,
-      );
+      throw new AppError(nameRequired.code, nameRequired.message);
     }
   }
 
@@ -138,10 +123,7 @@ async function saveReport(params: SaveReportParams): Promise<{
     orgBytes - (existing?.sizeBytes ?? 0) + sizeBytes >
     REPORT_MAX_BYTES_PER_ORG
   ) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      `This organization is storing ${mb(orgBytes)} of reports, the limit. Delete reports you no longer need from the Reports page.`,
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   if (existing) {
@@ -252,10 +234,7 @@ async function shareReport(params: ShareParams): Promise<ReportMetadata> {
   // boundary. A token minted on a self-hosted deployment is a link that
   // silently does nothing, and the user would have copied it believing otherwise.
   if (!(await sharesEnabled())) {
-    throw new AppError(
-      "VALIDATION_ERROR",
-      "Sharing is only available on hosted OpenSEO.",
-    );
+    throw new AppError(nameRequired.code, nameRequired.message);
   }
 
   const report = await getReport(params.projectId, params.reportId);
@@ -309,10 +288,7 @@ async function unshareReport(params: ShareParams): Promise<ReportMetadata> {
 // so no "omit reportId" hint here; that one belongs to save_report, which has
 // its own message above.
 function notFound(reportId: string) {
-  return new AppError(
-    "NOT_FOUND",
-    `No report ${reportId} in this project. Call list_reports to see what exists.`,
-  );
+  return new AppError("NOT_FOUND", "We couldn't find that. It may have been moved or deleted.");
 }
 
 export const ReportService = {

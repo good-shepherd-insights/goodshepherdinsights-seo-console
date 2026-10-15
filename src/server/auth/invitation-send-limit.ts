@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { AppError } from "@/server/lib/errors";
 
 // Daily caps on invitation *emails*. The org plugin's invitationLimit bounds
@@ -33,10 +34,7 @@ export async function consumeInvitationSendBudget(
       PER_ORG_DAILY_LIMIT,
     ))
   ) {
-    throw new AppError(
-      "RATE_LIMITED",
-      "This organization has reached its daily invitation limit.",
-    );
+    throw new AppError(rateLimited.code, rateLimited.message)
   }
   if (
     !(await bumpDailyCounter(
@@ -44,9 +42,6 @@ export async function consumeInvitationSendBudget(
       PER_ADDRESS_DAILY_LIMIT,
     ))
   ) {
-    throw new AppError(
-      "RATE_LIMITED",
-      "This address has already received several invitations today.",
-    );
+    throw new AppError(rateLimited.code, rateLimited.message)
   }
 }

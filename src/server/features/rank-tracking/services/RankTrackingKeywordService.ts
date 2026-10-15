@@ -2,6 +2,11 @@ import { RankTrackingRepository } from "@/server/features/rank-tracking/reposito
 import type { rankTrackingKeywords } from "@/db/schema";
 import { AppError } from "@/server/lib/errors";
 import {
+  nameRequired,
+  rankConfigNotFound,
+  rankNoKeywords,
+} from "@/shared/errors";
+import {
   devicesCount,
   estimateRankCheckCredits,
   estimateScheduledRankCheckCredits,
@@ -27,10 +32,7 @@ async function addKeywords(
   const existing = await RankTrackingRepository.getKeywordsForConfig(configId);
 
   if (existing.length >= MAX_KEYWORDS_PER_CONFIG) {
-    throw new AppError(
-      "INTERNAL_ERROR",
-      `Maximum ${MAX_KEYWORDS_PER_CONFIG} keywords per domain. Currently tracking ${existing.length}.`,
-    );
+    throw new AppError(rankNoKeywords.code, rankNoKeywords.message);
   }
 
   const existingKeywords = new Set(existing.map((kw) => kw.keyword));
@@ -192,7 +194,7 @@ async function getValidatedConfig(configId: string, projectId: string) {
     projectId,
   });
   if (!config) {
-    throw new AppError("NOT_FOUND", "Rank tracking config not found");
+    throw new AppError(rankConfigNotFound.code, rankConfigNotFound.message);
   }
   return config;
 }
@@ -201,10 +203,7 @@ function scheduledApprovalError(
   scheduleInterval: "daily" | "weekly" | "monthly",
   estimate: ReturnType<typeof estimateScheduledRankCheckCredits>,
 ) {
-  return new AppError(
-    "VALIDATION_ERROR",
-    `Adding these keywords would make each ${scheduleInterval} scheduled check cost a nominal queued estimate of ${estimate.costCredits} credits (~$${estimate.costUsd.toFixed(4)} per check; ~${estimate.monthlyCostCredits} credits/month). Call estimate_rank_tracker_cost with additionalKeywords, show the recurring estimate and live-fallback caveat to the user, then retry with maxEstimatedScheduledCheckCredits set to the approved per-check estimate. Live fallback for rejected, failed, or timed-out queued tasks may use additional separately billed credits.`,
-  );
+  return new AppError(nameRequired.code, nameRequired.message);
 }
 
 export const RankTrackingKeywordService = {

@@ -1,4 +1,5 @@
 import { isHostedAuthMode } from "@/lib/auth-mode";
+import { AppError } from "@/server/lib/errors";
 
 let workersEnvPromise: Promise<Record<string, unknown> | null> | null = null;
 
@@ -32,7 +33,7 @@ export function getEnvValueSync(
 export async function getRequiredEnvValue(name: string): Promise<string> {
   const value = await getOptionalEnvValue(name);
   if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+    throw new AppError("INTERNAL_ERROR", `Missing required environment variable: ${name}`);
   }
   return value;
 }

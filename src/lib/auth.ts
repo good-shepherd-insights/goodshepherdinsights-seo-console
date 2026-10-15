@@ -12,6 +12,8 @@ import * as pgSchema from "@/db/pg/schema";
 import { getDatabaseProvider } from "@/db/provider";
 import { z } from "zod";
 import { isHostedAuthMode } from "@/lib/auth-mode";
+import { AppError } from "@/server/lib/errors";
+import { authConfigMissing } from "@/shared/errors";
 import { createApiKeyPlugin } from "@/lib/auth-api-key";
 import { createBaseAuthConfig } from "@/lib/auth-config";
 import {
@@ -304,7 +306,7 @@ export function getHostedBaseUrl() {
   const baseUrl = env.BETTER_AUTH_URL?.trim();
 
   if (!baseUrl) {
-    throw new Error("BETTER_AUTH_URL is required in hosted mode");
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   return hostedBaseUrlSchema.parse(baseUrl);
@@ -317,11 +319,11 @@ function getHostedSecret() {
   const secret = env.BETTER_AUTH_SECRET?.trim();
 
   if (!secret) {
-    throw new Error("BETTER_AUTH_SECRET is required");
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   if (secret.length < 32) {
-    throw new Error("BETTER_AUTH_SECRET must be at least 32 characters");
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   return secret;
@@ -347,11 +349,11 @@ function getGoogleSocialProviderConfig() {
   const googleClientSecret = env.GOOGLE_CLIENT_SECRET?.trim();
 
   if (!googleClientId) {
-    throw new Error("GOOGLE_CLIENT_ID is required in hosted mode");
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   if (!googleClientSecret) {
-    throw new Error("GOOGLE_CLIENT_SECRET is required in hosted mode");
+    throw new AppError(authConfigMissing.code, authConfigMissing.message);
   }
 
   return {

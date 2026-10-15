@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { insufficientCredits, serviceUnavailable, serviceTaskMissing, urlInvalid, domainInvalid, crawlTargetBlocked, forbidden, notImplemented, jsonRequired, domainRequired, unauthenticated, notFound, rateLimited, authConfigMissing } from "@/shared/errors";
 import { waitUntil } from "cloudflare:workers";
 import { RankTrackingRepository } from "@/server/features/rank-tracking/repositories/RankTrackingRepository";
 import { RankTrackingService } from "@/server/features/rank-tracking/services/RankTrackingService";
@@ -7,8 +8,7 @@ import { getLatestResults } from "@/server/features/rank-tracking/services/rankT
 import { AppError, asAppError } from "@/server/lib/errors";
 import { captureServerEvent } from "@/server/lib/posthog";
 import { requireProjectContext } from "@/serverFunctions/middleware";
-import {
-  getConfigsSchema,
+import {   getConfigsSchema,
   createConfigSchema,
   updateConfigSchema,
   triggerCheckSchema,
@@ -53,7 +53,7 @@ async function requireConfig(configId: string, projectId: string) {
     projectId,
   });
   if (!config) {
-    throw new AppError("INTERNAL_ERROR", "Rank tracking config not found");
+    throw new AppError(serviceUnavailable.code, serviceUnavailable.message)
   }
   return config;
 }

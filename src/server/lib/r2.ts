@@ -1,9 +1,11 @@
 import { env } from "cloudflare:workers";
+import { AppError } from "@/server/lib/errors";
+import { auditNotFound } from "@/shared/errors";
 
 export async function getJsonFromR2(key: string): Promise<string> {
   const object = await env.R2.get(key);
   if (!object) {
-    throw new Error("Audit payload not found");
+    throw new AppError(auditNotFound.code, auditNotFound.message);
   }
 
   return object.text();
